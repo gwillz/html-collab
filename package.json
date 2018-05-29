@@ -1,0 +1,12 @@
+{
+  "name": "metadata-collab-html",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "main": "index.js",
+  "author": "GoodThnx Co",
+  "license": "UNLICENSED",
+  "bin": {
+      "collab-html": "./index.js"
+  }
+}
