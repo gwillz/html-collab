@@ -1,13 +1,11 @@
 #!/usr/bin/env nodejs
-const fs = require('fs')
-const path = require('path')
+const fs     = require('fs')
+const path   = require('path')
 const equals = require('array-equal')
+const chalk  = require('chalk')
 
 const HEAD_INSERT = '<!-- HEAD BUNDLES -->'
 const MAIN_INSERT = '<!-- MAIN BUNDLES -->'
-
-const Reset   = "\x1b[0m"
-const FgGreen = "\x1b[32m"
 
 let manifestCache = {};
 
@@ -46,7 +44,7 @@ function main(manifest_path, source, dest) {
         
         // green if changed, regular if not
         if (value !== manifestCache[key]) {
-            console.log(FgGreen + value.padEnd(40) + Reset, key);
+            console.log(chalk.green(value.padEnd(40)), key);
         }
         else {
             console.log(value.padEnd(40), key);
@@ -144,7 +142,7 @@ if (require.main === module) {
     const settings = getSettings(process.argv[2]);
     
     if (process.argv.includes('watch')) {
-        console.log('watching', settings.manifest, `(${settings.watch}ms)`)
+        console.log('watching:', chalk.blue(settings.manifest), chalk.red(`(${settings.watch}ms)`))
         console.log('-----------')
         watch(settings.manifest, settings.source, settings.dest, settings.watch)
         main(settings.manifest, settings.source, settings.dest)
