@@ -7,6 +7,9 @@
   "author": "GoodThnx Co",
   "license": "UNLICENSED",
   "bin": {
-      "collab-html": "./index.js"
+    "collab-html": "./index.js"
+  },
+  "dependencies": {
+    "array-equal": "^1.0.0"
   }
 }

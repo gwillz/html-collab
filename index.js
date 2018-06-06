@@ -1,6 +1,7 @@
 #!/usr/bin/env nodejs
 const fs = require('fs')
 const path = require('path')
+const equals = require('array-equal')
 
 const HEAD_INSERT = '<!-- HEAD BUNDLES -->'
 const MAIN_INSERT = '<!-- MAIN BUNDLES -->'
@@ -8,14 +9,14 @@ const MAIN_INSERT = '<!-- MAIN BUNDLES -->'
 const Reset   = "\x1b[0m"
 const FgGreen = "\x1b[32m"
 
-let manifestCache = {}
+let manifestCache = {};
 
 /**
  * manifest.json contains hashed filenames of js/css files from _both_
  * webpack and postcss
  */
-function main(path, source, dest) {
-    const manifest = JSON.parse(fs.readFileSync(path));
+function main(manifest_path, source, dest) {
+    const manifest = JSON.parse(fs.readFileSync(manifest_path));
       
     let indexfile  = fs.readFileSync(source);
     
@@ -25,19 +26,19 @@ function main(path, source, dest) {
     ))
     
     // quit early if this manifest has already been processed
-    if (cached.length === keys.length) return
+    if (equals(Object.values(manifestCache), Object.values(manifest))) return;
     
     for (let key in manifest) {
-        let value = manifest[key]
+        let value = manifest[key];
         
         if (value.endsWith('.css')) {
             indexfile = insertAsset(indexfile, value, 'css')
         }
         else if (value.endsWith('.js') && key.includes('vendor')) {
-            indexfile = insertAsset(indexfile, value, 'vendorjs')
+            indexfile = insertAsset(indexfile, value, 'vendorjs');
         }
         else if (value.endsWith('.js')) {
-            indexfile = insertAsset(indexfile, value, 'mainjs')
+            indexfile = insertAsset(indexfile, value, 'mainjs');
         }
         else {
             continue;
@@ -45,33 +46,37 @@ function main(path, source, dest) {
         
         // green if changed, regular if not
         if (value !== manifestCache[key]) {
-            console.log(FgGreen + value.padEnd(40) + Reset, key)
+            console.log(FgGreen + value.padEnd(40) + Reset, key);
         }
         else {
-            console.log(value.padEnd(40), key)
+            console.log(value.padEnd(40), key);
         }
     }
     
-    fs.writeFileSync(dest, indexfile)
-    console.log('-----------')
+    fs.writeFileSync(dest, indexfile);
+    console.log('-----------');
     
-    manifestCache = manifest
+    manifestCache = manifest;
 }
 
 
 /**
  * Update the file asap when webpack/postcss have updated the mainfest
  */
-function watch(path, source, dest, timeout) {
+function watch(manifest_path, source, dest, timeout) {
+    const watch_path = path.dirname(path.resolve(manifest_path));
     let timer;
-    fs.watch('./', {encoding: 'utf8'}, (event, filename) => {
-        if (path.endsWith(filename)) {
+    
+    fs.watch(watch_path, {encoding: 'utf8'}, (event, filename) => {
+        if (manifest_path.endsWith(filename)) {
             try {
-                clearTimeout(timer)
-                timer = setTimeout(() => main(path, source, dest), timeout)
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    main(manifest_path, source, dest);
+                }, timeout);
             }
             catch (e) {
-                console.error("Error:", e)
+                console.error("Error:", e);
             }
         }
     })
@@ -139,9 +144,9 @@ if (require.main === module) {
     const settings = getSettings(process.argv[2]);
     
     if (process.argv.includes('watch')) {
-        console.log('watching', settings.manifest)
+        console.log('watching', settings.manifest, `(${settings.watch}ms)`)
         console.log('-----------')
-        watch(settings.manifest, settings.source, settings.dest, settings.timeout)
+        watch(settings.manifest, settings.source, settings.dest, settings.watch)
         main(settings.manifest, settings.source, settings.dest)
     }
     else {
