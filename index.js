@@ -14,6 +14,12 @@ let manifestCache = {};
  * webpack and postcss
  */
 function main(manifest_path, source, dest) {
+    if (!fs.existsSync(manifest_path)) {
+        console.log(chalk.red("manifest file not found"));
+        console.log('-----------');
+        return 1;
+    }
+    
     const manifest = JSON.parse(fs.readFileSync(manifest_path));
       
     let indexfile  = fs.readFileSync(source);
@@ -55,6 +61,7 @@ function main(manifest_path, source, dest) {
     console.log('-----------');
     
     manifestCache = manifest;
+    return 0;
 }
 
 
@@ -150,6 +157,6 @@ if (require.main === module) {
     else {
         console.log('processing', settings.manifest)
         console.log('-----------')
-        main(settings.manifest, settings.source, settings.dest)
+        process.exit(main(settings.manifest, settings.source, settings.dest))
     }
 }
