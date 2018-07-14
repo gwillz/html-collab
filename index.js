@@ -1,4 +1,5 @@
 #!/usr/bin/env nodejs
+
 const fs     = require('fs')
 const path   = require('path')
 const equals = require('array-equal')
@@ -11,16 +12,33 @@ const COLUMN_WIDTH = 60;
 const manifestCache = {};
 
 const DEFAULT_CONFIG = {
-    manifest: './manifest.json',
-    watch: 250,
-    multi: false,
-    source: 'src/index.html',
-    dest: 'public/',
+    manifest: './manifest.json',    // source mainfest
+    source: 'src/index.html',       // source .html template
+    dest: 'public/',                // output directory
+    multi: false,                   // create mutliple entry .html files
+    watch: 250,                     // watch polling rate
 };
 
 /**
- * manifest.json contains hashed filenames of js/css files from _both_
- * webpack and postcss
+ * This injects js/css dependencies into an .html as defined by
+ * a 'manifest.json'. This is important for two reasons:
+ *  - de-duplication of delivered code
+ *  - cache busting with filename hashes
+ *
+ * Manifest files are created by both webpack and postcss with these plugins.
+ * These will collaborate on the same 'manifest.json':
+ * - webpack-assets-manifest
+ * - postcss-hash
+ *
+ * A simple example:
+ *  - index.html contains no js/css
+ *  - manifest.json contains js/css for 2 entry files as 4 chunks:
+ *    1. shared css
+ *    2. shared vendor js
+ *    3. local js for entry 1
+ *    4. local js for entry 2
+ *  - an entry-1.html is created with chunks 1, 2 and 3
+ *  - an entry-2.html is created with chunks 1, 2 and 4
  */
 function main(settings) {
     settings = Object.assign(DEFAULT_CONFIG, settings);
@@ -40,14 +58,17 @@ function main(settings) {
         for (let name in filtered) {
             run(filtered[name], settings, name + ".html");
         }
-        return 0;
     }
-    //
-    run(manifest, settings, path.basename(settings.source));
+    else {
+        run(manifest, settings, path.basename(settings.source));
+    }
     return 0;
 }
 
 
+/**
+ * Create an entry file with injected dependencies as per given 'manifest'
+ */
 function run(manifest, settings, dest_name) {
     const cache = manifestCache[dest_name] || {};
     
@@ -111,7 +132,24 @@ function watch(settings) {
     })
 }
 
-
+/**
+ * Find common chunks within keys, group by keys.
+ * E.g:
+ *   'vendor~index~hey': '1.js',
+ *   'vendor~index': '2.js',
+ *   'index': '3.js',
+ *   'hey': '4.js'
+ * becomes:
+ *   'index': {
+ *       'vendor~index~key': '1.js',
+ *       'vendor~index': '2.js',
+ *       'index': '3.js'
+ *   },
+ *   'hey': {
+ *       'vendor~index~key': '1.js',
+ *       'hey': '4.js'
+ *   }
+ */
 function filterManifest(manifest) {
     const filtered = {};
     
@@ -133,7 +171,11 @@ function filterManifest(manifest) {
     return filtered;
 }
 
-
+/**
+ * Inject js/css as script/link, respectively.
+ * - 'vendorjs' and 'css' should be injected into the <head>
+ * - 'mainjs' is injected at the very end of the <body>
+ */
 function insertAsset(indexfile, value, type) {
     let point;
     let insert;
@@ -167,25 +209,35 @@ function insertAsset(indexfile, value, type) {
 }
 
 
+/**
+ * Configurations loaded from file are applied over default settings.
+ * 'config_path' resolving:
+ * - path is a file
+ * - path is a directory, containing 'html.config.js'
+ * - not found, use defaults
+ */
 function getSettings(config_path) {
-    if (config_path) {
-        config_path = path.resolve(process.cwd(), config_path);
-        return require(config_path);
-    }
-    try {
-        config_path = path.resolve(process.cwd(), 'html.config.js');
-        return require(config_path);
-    }
-    catch (e) {
-        return {};
-    }
+    const settings = (function() {
+        if (config_path) {
+            config_path = path.resolve(process.cwd(), config_path);
+            return require(config_path);
+        }
+        try {
+            config_path = path.resolve(process.cwd(), 'html.config.js');
+            return require(config_path);
+        }
+        catch (e) {
+            return {};
+        }
+    })();
+    return Object.assign(DEFAULT_CONFIG, settings);
 }
 
 
 // --- runtime ---
 
 if (require.main === module) {
-    const settings = Object.assign(DEFAULT_CONFIG, getSettings(process.argv[2]));
+    const settings = getSettings(process.argv[2]);
     
     if (process.argv.includes('watch')) {
         console.log('watching:', chalk.blue(settings.manifest), chalk.red(`(${settings.watch}ms)`))
