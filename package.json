@@ -9,6 +9,9 @@
   "bin": {
     "collab-html": "./index.js"
   },
+  "scripts": {
+    "test": "nyc tape test.js | tap-spec"
+  },
   "dependencies": {
     "array-equal": "^1.0.0",
     "chalk": "^2.4.1"
@@ -16,5 +19,10 @@
   "peerDependencies": {
     "postcss-hash": "^0.2.1",
     "webpack-assets-manifest": "^3.0.1"
+  },
+  "devDependencies": {
+    "nyc": "^12.0.2",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.9.1"
   }
 }

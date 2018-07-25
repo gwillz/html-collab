@@ -9,7 +9,7 @@ const HEAD_INSERT = '<!-- HEAD BUNDLES -->';
 const MAIN_INSERT = '<!-- MAIN BUNDLES -->';
 const COLUMN_WIDTH = 60;
 
-const manifestCache = {};
+exports.manifestCache = {};
 
 const DEFAULT_CONFIG = {
     manifest: './manifest.json',    // source mainfest
@@ -70,12 +70,12 @@ function main(settings) {
  * Create an entry file with injected dependencies as per given 'manifest'
  */
 function run(manifest, settings, dest_name) {
-    const cache = manifestCache[dest_name] || {};
+    const cache = exports.manifestCache[dest_name] || {};
     
     // quit early if this manifest has already been processed
     if (equals(Object.values(cache), Object.values(manifest))) return 0;
     
-    let indexfile  = fs.readFileSync(settings.source);
+    let indexfile = fs.readFileSync(settings.source);
     
     for (let key in manifest) {
         let value = manifest[key];
@@ -104,7 +104,7 @@ function run(manifest, settings, dest_name) {
     console.log(dest_path);
     console.log('-----------');
     
-    manifestCache[dest_name] = manifest;
+    exports.manifestCache[dest_name] = manifest;
 }
 
 
@@ -234,8 +234,17 @@ function getSettings(config_path) {
 }
 
 
+// exports for tests
+exports.main = main;
+exports.run = run;
+exports.insertAsset = insertAsset;
+exports.filterManifest = filterManifest;
+exports.getSettings = getSettings;
+
+
 // --- runtime ---
 
+/* istanbul ignore next */
 if (require.main === module) {
     const settings = getSettings(process.argv[2]);
     
