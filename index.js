@@ -135,18 +135,18 @@ function watch(settings) {
 /**
  * Find common chunks within keys, group by keys.
  * E.g:
- *   'vendor~index~hey': '1.js',
- *   'vendor~index': '2.js',
+ *   'vendors~index~hey': '1.js',
+ *   'vendors~index': '2.js',
  *   'index': '3.js',
  *   'hey': '4.js'
  * becomes:
  *   'index': {
- *       'vendor~index~key': '1.js',
- *       'vendor~index': '2.js',
+ *       'vendors~index~key': '1.js',
+ *       'vendors~index': '2.js',
  *       'index': '3.js'
  *   },
  *   'hey': {
- *       'vendor~index~key': '1.js',
+ *       'vendors~index~key': '1.js',
  *       'hey': '4.js'
  *   }
  */
